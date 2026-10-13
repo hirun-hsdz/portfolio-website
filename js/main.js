@@ -1,82 +1,324 @@
 
-const GITHUB_USER = "hirun-hsdz"; 
+const GITHUB_USER = "hirun-hsdz";
 
 const projects = [
-  { title: "iMart Billing System", blurb: "Java console supermarket billing.", desc: "A console application that records items, calculates totals and prints a customer bill for a supermarket.", tech: ["Java", "OOP", "Console"] },
-  { title: "Smart Park Billing System", blurb: "Group assignment: parking fees in Java.", desc: "A group project for Programming Fundamentals that calculates parking charges and produces billing output.", tech: ["Java", "Teamwork"] },
-  { title: "Student Management System", blurb: "Console app to manage student records.", desc: "Add, search, update and delete student records from a menu-driven console program.", tech: ["Java", "Arrays", "Methods"] },
-  { title: "Student Management GUI", blurb: "Swing version of the student system.", desc: "The same system rebuilt as a desktop application with a Java Swing interface for the OOP module.", tech: ["Java", "Swing", "OOP"] }
+  {
+    title: "iMart Billing System",
+    blurb: "Java console supermarket billing.",
+    desc: "A console application that records items, calculates totals and prints a customer bill for a supermarket.",
+    tech: ["Java", "OOP", "Console"]
+  },
+  {
+    title: "Smart Park Billing System",
+    blurb: "Group assignment: parking fees in Java.",
+    desc: "A group project for Programming Fundamentals that calculates parking charges and produces billing output.",
+    tech: ["Java", "Teamwork"]
+  },
+  {
+    title: "Student Management System",
+    blurb: "Console app to manage student records.",
+    desc: "Add, search, update and delete student records from a menu-driven console program.",
+    tech: ["Java", "Arrays", "Methods"]
+  },
+  {
+    title: "Student Management GUI",
+    blurb: "Swing version of the student system.",
+    desc: "The same system rebuilt as a desktop application with a Java Swing interface for the OOP module.",
+    tech: ["Java", "Swing", "OOP"]
+  }
 ];
 
-const $ = (s) => document.querySelector(s);
-const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; };
-const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const $ = (selector) => document.querySelector(selector);
 
+const el = (tag, cls, html) => {
+  const element = document.createElement(tag);
 
-const root = document.documentElement, themeBtn = $("#themeBtn");
-function setTheme(t) {
-  root.dataset.theme = t;
-  themeBtn.textContent = t === "dark" ? "Light" : "Dark";
-  themeBtn.setAttribute("aria-pressed", t === "dark");
-  themeBtn.setAttribute("aria-label", `Switch to ${t === "dark" ? "light" : "dark"} theme`);
-  try { localStorage.setItem("theme", t); } catch (e) {}
-}
-let saved = null; try { saved = localStorage.getItem("theme"); } catch (e) {}
-setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-themeBtn.onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+  if (cls) {
+    element.className = cls;
+  }
 
-const menuBtn = $("#menuBtn"), links = $("#navLinks");
-menuBtn.onclick = () => menuBtn.setAttribute("aria-expanded", links.classList.toggle("open"));
-links.addEventListener("click", (e) => { if (e.target.tagName === "A") { links.classList.remove("open"); menuBtn.setAttribute("aria-expanded", false); } });
+  if (html) {
+    element.innerHTML = html;
+  }
 
-const modal = $("#modal");
-projects.forEach((p) => {
-  const card = el("button", "card", `<h3>${esc(p.title)}</h3><p>${esc(p.blurb)}</p>`);
-  card.type = "button";
-  card.onclick = () => {
-    $("#modalTitle").textContent = p.title;
-    $("#modalDesc").textContent = p.desc;
-    $("#modalTech").replaceChildren(...p.tech.map((t) => el("li", "", esc(t))));
-    modal.showModal();
-  };
-  $("#projectGrid").append(card);
-});
-$("#modalClose").onclick = () => modal.close();
-modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); }); // click backdrop
+  return element;
+};
 
-async function loadRepos() {
-  const status = $("#ghStatus"), grid = $("#repoGrid");
-  $("#ghLink").href = `https://github.com/hirun-hsdz${GITHUB_USER}`;
-  $("#ghLink").textContent = `github.com/${GITHUB_USER}`;
+const esc = (text) =>
+  String(text ?? "").replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  }[character]));
+
+// ================================
+// THEME SWITCHER
+// ================================
+
+const root = document.documentElement;
+const themeBtn = $("#themeBtn");
+
+function setTheme(theme) {
+  if (!themeBtn) return;
+
+  root.dataset.theme = theme;
+
+  themeBtn.textContent = theme === "dark" ? "Light" : "Dark";
+
+  themeBtn.setAttribute("aria-pressed", String(theme === "dark"));
+
+  themeBtn.setAttribute(
+    "aria-label",
+    `Switch to ${theme === "dark" ? "light" : "dark"} theme`
+  );
+
   try {
-    const res = await fetch(`https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=6`);
-    if (!res.ok) throw new Error(res.status === 404 ? "User not found" : `Error ${res.status}`);
-    const repos = await res.json();
-    if (!repos.length) { status.textContent = "No public repositories yet."; return; }
-    status.textContent = `Latest ${repos.length} public repositories.`;
-    repos.forEach((r) => {
-      const a = el("a", "card", `<h3>${esc(r.name)}</h3><p>${esc(r.description || "No description.")}</p><small>${esc(r.language || "Mixed")} · ${r.stargazers_count} stars</small>`);
-      a.href = r.html_url; a.target = "_blank"; a.rel = "noopener";
-      grid.append(a);
-    });
-  } catch (err) {
-    status.textContent = `Couldn't load repositories (${err.message}). Check GITHUB_USER in js/main.js.`;
+    localStorage.setItem("theme", theme);
+  } catch (error) {
+    // Storage may be unavailable.
   }
 }
+
+let savedTheme = null;
+
+try {
+  savedTheme = localStorage.getItem("theme");
+} catch (error) {
+  // Use the default theme if storage is unavailable.
+}
+
+const preferredTheme =
+  window.matchMedia &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+
+setTheme(savedTheme || preferredTheme);
+
+if (themeBtn) {
+  themeBtn.onclick = () => {
+    setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+  };
+}
+
+// ================================
+// MOBILE NAVIGATION
+// ================================
+
+const menuBtn = $("#menuBtn");
+const links = $("#navLinks");
+
+if (menuBtn && links) {
+  menuBtn.onclick = () => {
+    const isOpen = links.classList.toggle("open");
+
+    menuBtn.setAttribute("aria-expanded", String(isOpen));
+  };
+
+  links.addEventListener("click", (event) => {
+    if (event.target.closest("a")) {
+      links.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+// ================================
+// PROJECT CARDS AND MODAL
+// ================================
+
+const modal = $("#modal");
+const projectGrid = $("#projectGrid");
+
+if (projectGrid) {
+  projects.forEach((project) => {
+    const card = el(
+      "button",
+      "card",
+      `<h3>${esc(project.title)}</h3>
+       <p>${esc(project.blurb)}</p>`
+    );
+
+    card.type = "button";
+
+    card.onclick = () => {
+      if (!modal) return;
+
+      const modalTitle = $("#modalTitle");
+      const modalDesc = $("#modalDesc");
+      const modalTech = $("#modalTech");
+
+      if (modalTitle) {
+        modalTitle.textContent = project.title;
+      }
+
+      if (modalDesc) {
+        modalDesc.textContent = project.desc;
+      }
+
+      if (modalTech) {
+        modalTech.replaceChildren(
+          ...project.tech.map((technology) =>
+            el("li", "", esc(technology))
+          )
+        );
+      }
+
+      if (typeof modal.showModal === "function") {
+        modal.showModal();
+      }
+    };
+
+    projectGrid.append(card);
+  });
+}
+
+const modalClose = $("#modalClose");
+
+if (modalClose && modal) {
+  modalClose.onclick = () => modal.close();
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.close();
+    }
+  });
+}
+
+// ================================
+// GITHUB REPOSITORIES
+// ================================
+
+async function loadRepos() {
+  const status = $("#ghStatus");
+  const grid = $("#repoGrid");
+  const githubLink = $("#ghLink");
+
+  if (githubLink) {
+    githubLink.href = `https://github.com/${GITHUB_USER}`;
+    githubLink.textContent = `github.com/${GITHUB_USER}`;
+    githubLink.target = "_blank";
+    githubLink.rel = "noopener noreferrer";
+  }
+
+  if (!status || !grid) {
+    return;
+  }
+
+  status.textContent = "Loading GitHub repositories...";
+
+  // Clear old repository cards before loading.
+  grid.replaceChildren();
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=6`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        response.status === 404
+          ? "GitHub user not found."
+          : `GitHub API error: ${response.status}`
+      );
+    }
+
+    const repos = await response.json();
+
+    if (!repos.length) {
+      status.textContent = "No public repositories yet.";
+      return;
+    }
+
+    status.textContent =
+      `Latest ${repos.length} public repositories.`;
+
+    repos.forEach((repo) => {
+      const card = el(
+        "a",
+        "card",
+        `<h3>${esc(repo.name)}</h3>
+         <p>${esc(repo.description || "No description available.")}</p>
+         <small>${esc(repo.language || "Mixed")} · ${repo.stargazers_count} stars</small>`
+      );
+
+      card.href = repo.html_url;
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+
+      grid.append(card);
+    });
+  } catch (error) {
+    status.textContent =
+      `Couldn't load repositories: ${error.message}`;
+
+    console.error("GitHub repository loading error:", error);
+  }
+}
+
 loadRepos();
 
+// ================================
+// ACTIVE NAVIGATION SECTION
+// ================================
 
-const navLinks = [...links.querySelectorAll("a")];
-const spy = new IntersectionObserver((entries) => {
-  entries.forEach((en) => {
-    if (en.isIntersecting) navLinks.forEach((a) => a.classList.toggle("active", a.hash === `#${en.target.id}`));
-  });
-}, { rootMargin: "-45% 0px -50% 0px" });
-document.querySelectorAll("main section[id]").forEach((s) => spy.observe(s));
+const navLinks = links
+  ? [...links.querySelectorAll("a")]
+  : [];
 
-const fill = new IntersectionObserver((entries) => {
-  entries.forEach((en) => {
-    if (en.isIntersecting) { en.target.style.width = en.target.dataset.level + "%"; fill.unobserve(en.target); }
+if ("IntersectionObserver" in window) {
+  const sections = document.querySelectorAll("main section[id]");
+
+  const spy = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          navLinks.forEach((link) => {
+            link.classList.toggle(
+              "active",
+              link.hash === `#${entry.target.id}`
+            );
+          });
+        }
+      });
+    },
+    {
+      rootMargin: "-45% 0px -50% 0px"
+    }
+  );
+
+  sections.forEach((section) => {
+    spy.observe(section);
   });
-}, { threshold: 0.4 });
-document.querySelectorAll(".meter i").forEach((b) => fill.observe(b));
+}
+
+// ================================
+// SKILL METER ANIMATION
+// ================================
+
+if ("IntersectionObserver" in window) {
+  const fill = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const level = Number(entry.target.dataset.level);
+
+          if (Number.isFinite(level)) {
+            entry.target.style.width =
+              `${Math.max(0, Math.min(100, level))}%`;
+          }
+
+          fill.unobserve(entry.target);
+        }
+      });
+    },
+    {
+      threshold: 0.4
+    }
+  );
+
+  document.querySelectorAll(".meter i").forEach((bar) => {
+    fill.observe(bar);
+  });
+}
